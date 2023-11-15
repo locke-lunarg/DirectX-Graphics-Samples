@@ -567,6 +567,14 @@ void D3D12HelloTexture::PopulateCommandList()
     //m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 
 
     m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView1);
+
+    // m_commandList4->EndRenderPass();
+    // m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 
+    // renderPassBeginningAccessClear = { D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE, {} };
+    // renderPassEndingAccessPreserve = { D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE, {} };
+    // renderPassRenderTargetDesc = { rtvHandle, renderPassBeginningAccessClear, renderPassEndingAccessPreserve };
+    // m_commandList4->BeginRenderPass(1, &renderPassRenderTargetDesc, nullptr, D3D12_RENDER_PASS_FLAG_NONE);
+        
     m_commandList->DrawInstanced(3, 1, 0, 0);
     
     m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView2);

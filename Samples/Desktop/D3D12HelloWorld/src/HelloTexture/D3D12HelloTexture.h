@@ -69,8 +69,12 @@ private:
 
     // App resources.
     ComPtr<ID3D12Resource> m_vertexBuffer;
+    ComPtr<ID3D12Resource> m_vertexBuffer1;
+    ComPtr<ID3D12Resource> m_vertexBuffer2;
     ComPtr<ID3D12Resource> m_copy_vertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+    D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView1;
+    D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView2;
     ComPtr<ID3D12Resource> m_texture;
     ComPtr<ID3D12Resource> m_constantBuffer;
     SceneConstantBuffer m_constantBufferData;

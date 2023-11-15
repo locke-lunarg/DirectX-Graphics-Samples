@@ -241,9 +241,23 @@ void D3D12HelloTexture::LoadAssets()
         // Define the geometry for a triangle.
         Vertex triangleVertices[] =
         {
+            { { -0.3f, -0.05f * m_aspectRatio, 0.0f }, { 0.5f, 0.0f } },
+            { { -0.05f, -0.55f * m_aspectRatio, 0.0f }, { 1.0f, 1.0f } },
+            { { -0.55f, -0.55f * m_aspectRatio, 0.0f }, { 0.0f, 1.0f } }
+        };
+
+        Vertex triangleVertices1[] =
+        {
             { { 0.0f, 0.25f * m_aspectRatio, 0.0f }, { 0.5f, 0.0f } },
             { { 0.25f, -0.25f * m_aspectRatio, 0.0f }, { 1.0f, 1.0f } },
             { { -0.25f, -0.25f * m_aspectRatio, 0.0f }, { 0.0f, 1.0f } }
+        };
+
+        Vertex triangleVertices2[] =
+        {
+            { { 0.3f, 0.55f * m_aspectRatio, 0.0f }, { 0.5f, 0.0f } },
+            { { 0.55f, 0.05f * m_aspectRatio, 0.0f }, { 1.0f, 1.0f } },
+            { { 0.05f, 0.05f * m_aspectRatio, 0.0f }, { 0.0f, 1.0f } }
         };
 
         const UINT vertexBufferSize = sizeof(triangleVertices);
@@ -261,6 +275,22 @@ void D3D12HelloTexture::LoadAssets()
             IID_PPV_ARGS(&m_vertexBuffer)));
 
         ThrowIfFailed(m_device->CreateCommittedResource(
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+            D3D12_HEAP_FLAG_NONE,
+            &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr,
+            IID_PPV_ARGS(&m_vertexBuffer1)));
+
+        ThrowIfFailed(m_device->CreateCommittedResource(
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+            D3D12_HEAP_FLAG_NONE,
+            &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr,
+            IID_PPV_ARGS(&m_vertexBuffer2)));
+
+        ThrowIfFailed(m_device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
             D3D12_HEAP_FLAG_NONE,
             &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
@@ -275,10 +305,26 @@ void D3D12HelloTexture::LoadAssets()
         memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
         m_vertexBuffer->Unmap(0, nullptr);
 
+        ThrowIfFailed(m_vertexBuffer1->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+        memcpy(pVertexDataBegin, triangleVertices1, sizeof(triangleVertices1));
+        m_vertexBuffer1->Unmap(0, nullptr);
+
+        ThrowIfFailed(m_vertexBuffer2->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+        memcpy(pVertexDataBegin, triangleVertices2, sizeof(triangleVertices2));
+        m_vertexBuffer2->Unmap(0, nullptr);
+
         // Initialize the vertex buffer view.
         m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
         m_vertexBufferView.StrideInBytes = sizeof(Vertex);
         m_vertexBufferView.SizeInBytes = vertexBufferSize;
+
+        m_vertexBufferView1.BufferLocation = m_vertexBuffer1->GetGPUVirtualAddress();
+        m_vertexBufferView1.StrideInBytes = sizeof(Vertex);
+        m_vertexBufferView1.SizeInBytes = vertexBufferSize;
+
+        m_vertexBufferView2.BufferLocation = m_vertexBuffer2->GetGPUVirtualAddress();
+        m_vertexBufferView2.StrideInBytes = sizeof(Vertex);
+        m_vertexBufferView2.SizeInBytes = vertexBufferSize;                
     }
 
     // Note: ComPtr's are CPU objects but this resource needs to stay in scope until
@@ -519,6 +565,12 @@ void D3D12HelloTexture::PopulateCommandList()
     // m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 
     m_commandList->DrawInstanced(3, 1, 0, 0);
     //m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 
+
+    m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView1);
+    m_commandList->DrawInstanced(3, 1, 0, 0);
+    
+    m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView2);
+    m_commandList->DrawInstanced(3, 1, 0, 0);
 
     m_commandList4->EndRenderPass();
     // m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 

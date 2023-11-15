@@ -260,6 +260,14 @@ void D3D12HelloTexture::LoadAssets()
             nullptr,
             IID_PPV_ARGS(&m_vertexBuffer)));
 
+        ThrowIfFailed(m_device->CreateCommittedResource(
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+            D3D12_HEAP_FLAG_NONE,
+            &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+            D3D12_RESOURCE_STATE_COPY_DEST,
+            nullptr,
+            IID_PPV_ARGS(&m_copy_vertexBuffer)));
+
         // Copy the triangle data to the vertex buffer.
         UINT8* pVertexDataBegin;
         CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
@@ -473,6 +481,7 @@ void D3D12HelloTexture::PopulateCommandList()
     ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get()));
     
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    // m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
     const float clearColor4[]{ 0.0f, 0.2f, 0.4f, 1.0f };
     CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R32G32B32_FLOAT, clearColor4 };
@@ -506,9 +515,13 @@ void D3D12HelloTexture::PopulateCommandList()
     // m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+
+    // m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 
     m_commandList->DrawInstanced(3, 1, 0, 0);
+    //m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 
 
     m_commandList4->EndRenderPass();
+    // m_commandList->CopyResource(m_copy_vertexBuffer.Get(), m_vertexBuffer.Get()); 
 
     // Indicate that the back buffer will now be used to present.
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));

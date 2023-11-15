@@ -63,6 +63,7 @@ private:
     ComPtr<ID3D12DescriptorHeap> m_cbvSrvHeap;
     ComPtr<ID3D12PipelineState> m_pipelineState;
     ComPtr<ID3D12GraphicsCommandList> m_commandList;
+    ComPtr<ID3D12GraphicsCommandList4> m_commandList4;
     UINT m_rtvDescriptorSize;
     uint32_t m_cbvSrvDescriptorSize;
 

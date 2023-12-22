@@ -632,6 +632,7 @@ void D3D12Bundles::PopulateCommandList(FrameResource* pFrameResource)
     {
         // Execute the prebuilt bundle.
         m_commandList->ExecuteBundle(pFrameResource->m_bundle.Get());
+        m_commandList->ExecuteBundle(pFrameResource->m_bundle2.Get());
     }
     else
     {

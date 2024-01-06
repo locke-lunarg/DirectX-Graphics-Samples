@@ -44,6 +44,15 @@ private:
     ComPtr<ID3D12GraphicsCommandList> m_commandList;
     UINT m_rtvDescriptorSize;
 
+    ComPtr<ID3D12RootSignature> m_rootSignature;
+    ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
+    ComPtr<ID3D12DescriptorHeap> m_cbvSrvHeap;
+    ComPtr<ID3D12Resource> m_shadowTexture;
+    D3D12_CPU_DESCRIPTOR_HANDLE m_shadowDepthView;
+    D3D12_GPU_DESCRIPTOR_HANDLE m_nullSrvHandle;    // Null SRV for out of bounds behavior.
+    D3D12_GPU_DESCRIPTOR_HANDLE m_shadowDepthHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE m_shadowCbvHandle;
+
     // Synchronization objects.
     UINT m_frameIndex;
     HANDLE m_fenceEvent;

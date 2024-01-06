@@ -1009,6 +1009,10 @@ void D3D12Multithreading::WorkerThread(int threadIndex)
         D3D12_GPU_DESCRIPTOR_HANDLE cbvSrvHeapStart = m_cbvSrvHeap->GetGPUDescriptorHandleForHeapStart();
         const UINT cbvSrvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         const UINT nullSrvCount = 2;
+
+        pSceneCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pCurrentFrameResource->m_shadowTexture.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COPY_SOURCE));
+        // pSceneCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pCurrentFrameResource->m_shadowTexture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
+
         for (int j = threadIndex; j < _countof(SampleAssets::Draws); j += NumContexts)
         {
             SampleAssets::DrawParameters drawArgs = SampleAssets::Draws[j];

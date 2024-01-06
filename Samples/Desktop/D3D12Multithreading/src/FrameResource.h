@@ -35,7 +35,6 @@ public:
 
     UINT64 m_fenceValue;
 
-private:
     ComPtr<ID3D12PipelineState> m_pipelineState;
     ComPtr<ID3D12PipelineState> m_pipelineStateShadowMap;
     ComPtr<ID3D12Resource> m_shadowTexture;

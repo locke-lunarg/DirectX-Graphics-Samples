@@ -71,6 +71,8 @@ private:
 	ComPtr<ID3D12Resource> m_vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 	ComPtr<ID3D12Resource> m_texture;
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT m_texture_footprint{};
+	ComPtr<ID3D12Resource> m_copy_texture;
 
 	// Synchronization objects.
 	UINT m_frameIndex;

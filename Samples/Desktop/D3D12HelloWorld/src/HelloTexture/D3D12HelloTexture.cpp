@@ -236,9 +236,9 @@ void D3D12HelloTexture::LoadAssets()
 	ThrowIfFailed(m_commandList2->Close());
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator3.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList3)));
 	ThrowIfFailed(m_commandList3->Close());
-	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocatorb.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandListb)));
+	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocatorb.Get(), nullptr, IID_PPV_ARGS(&m_commandListb)));
 	ThrowIfFailed(m_commandListb->Close());
-	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocatora.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandLista)));
+	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocatora.Get(), nullptr, IID_PPV_ARGS(&m_commandLista)));
 	ThrowIfFailed(m_commandLista->Close());
 
 	// Create the vertex buffer.
@@ -450,26 +450,26 @@ void D3D12HelloTexture::OnRender()
 	src_location.SubresourceIndex = 0;
 
 	ThrowIfFailed(m_commandAllocatorb->Reset());
-	ThrowIfFailed(m_commandListb->Reset(m_commandAllocatorb.Get(), m_pipelineState.Get()));
+	ThrowIfFailed(m_commandListb->Reset(m_commandAllocatorb.Get(), nullptr));
 	m_commandListb->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
 	m_commandListb->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 	m_commandListb->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	ThrowIfFailed(m_commandListb->Close());
 
 	ThrowIfFailed(m_commandAllocatora->Reset());
-	ThrowIfFailed(m_commandLista->Reset(m_commandAllocatora.Get(), m_pipelineState.Get()));
+	ThrowIfFailed(m_commandLista->Reset(m_commandAllocatora.Get(), nullptr));
 	m_commandLista->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
 	m_commandLista->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 	m_commandLista->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	ThrowIfFailed(m_commandLista->Close());
 
 	// Execute the command list.
-	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-	WaitForPreviousFrame();
-
 	ID3D12CommandList* ppCommandListsb[] = { m_commandListb.Get() };
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandListsb), ppCommandListsb);
+	WaitForPreviousFrame();
+
+	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 	WaitForPreviousFrame();
 
 	ID3D12CommandList* ppCommandLists2[] = { m_commandList2.Get() };

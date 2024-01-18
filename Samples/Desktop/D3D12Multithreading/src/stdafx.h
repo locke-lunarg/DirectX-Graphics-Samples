@@ -33,7 +33,7 @@
 #include <process.h>
 #include <shellapi.h>
 
-#define SINGLETHREADED FALSE
+#define SINGLETHREADED TRUE
 
 static const UINT FrameCount = 3;
 

@@ -161,7 +161,7 @@ void D3D12HelloTexture::LoadAssets()
 		}
 
 		CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
-		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE);
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[1];
 		rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
@@ -354,7 +354,7 @@ void D3D12HelloTexture::LoadAssets()
 		textureData.SlicePitch = textureData.RowPitch * TextureHeight;
 
 		UpdateSubresources(m_commandList.Get(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
-		//m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 
 		// Describe and create a SRV for the texture.
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -451,9 +451,9 @@ void D3D12HelloTexture::OnRender()
 
 	ThrowIfFailed(m_commandAllocatorb->Reset());
 	ThrowIfFailed(m_commandListb->Reset(m_commandAllocatorb.Get(), nullptr));
-	//m_commandListb->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
-	//m_commandListb->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
-	m_commandListb->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+	m_commandListb->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
+	m_commandListb->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
+	m_commandListb->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	ThrowIfFailed(m_commandListb->Close());
 
 	ThrowIfFailed(m_commandAllocatora->Reset());
@@ -464,20 +464,11 @@ void D3D12HelloTexture::OnRender()
 	ThrowIfFailed(m_commandLista->Close());
 
 	// Execute the command list.
-	ID3D12CommandList* ppCommandListsb[] = { m_commandListb.Get() };
-	//m_commandQueue->ExecuteCommandLists(_countof(ppCommandListsb), ppCommandListsb);
-
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
-	ID3D12CommandList* ppCommandLists2[] = { m_commandList2.Get() };
+	ID3D12CommandList* ppCommandLists2[] = { m_commandListb.Get(), m_commandList2.Get(),  m_commandLista.Get(), m_commandList3.Get() };
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists2), ppCommandLists2);
-
-	ID3D12CommandList* ppCommandListsa[] = { m_commandLista.Get() };
-	m_commandQueue->ExecuteCommandLists(_countof(ppCommandListsa), ppCommandListsa);
-
-	ID3D12CommandList* ppCommandLists3[] = { m_commandList3.Get() };
-	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists3), ppCommandLists3);
 
 	// Present the frame.
 	ThrowIfFailed(m_swapChain->Present(1, 0));

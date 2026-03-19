@@ -163,6 +163,15 @@ void D3D12HelloConstBuffers::LoadAssets()
             featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
         }
 
+        D3D12_FEATURE_DATA_TIGHT_ALIGNMENT tightAlignmentData = {};
+        bool supportTightAlignment = SUCCEEDED(
+            m_device->CheckFeatureSupport(
+                D3D12_FEATURE_D3D12_TIGHT_ALIGNMENT,
+                &tightAlignmentData,
+                sizeof(tightAlignmentData)))
+            && tightAlignmentData.SupportTier >= D3D12_TIGHT_ALIGNMENT_TIER_1;
+        ThrowIfFailed(supportTightAlignment);
+
         CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
         CD3DX12_ROOT_PARAMETER1 rootParameters[1];
 
@@ -241,6 +250,13 @@ void D3D12HelloConstBuffers::LoadAssets()
 
         const UINT vertexBufferSize = sizeof(triangleVertices);
 
+        D3D12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize);
+        cbDesc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+        cbDesc.Alignment = 0;
+
+        D3D12_RESOURCE_ALLOCATION_INFO info =
+            m_device->GetResourceAllocationInfo(0, 1, &cbDesc);
+
         // Note: using upload heaps to transfer static data like vert buffers is not 
         // recommended. Every time the GPU needs it, the upload heap will be marshalled 
         // over. Please read up on Default Heap usage. An upload heap is used here for 
@@ -248,10 +264,12 @@ void D3D12HelloConstBuffers::LoadAssets()
         ThrowIfFailed(m_device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
             D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+            &cbDesc,
             D3D12_RESOURCE_STATE_GENERIC_READ,
             nullptr,
             IID_PPV_ARGS(&m_vertexBuffer)));
+
+        m_vertexBuffer->GetDesc();
 
         // Copy the triangle data to the vertex buffer.
         UINT8* pVertexDataBegin;
@@ -270,13 +288,22 @@ void D3D12HelloConstBuffers::LoadAssets()
     {
         const UINT constantBufferSize = sizeof(SceneConstantBuffer);    // CB size is required to be 256-byte aligned.
 
+        D3D12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize);
+        cbDesc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+        cbDesc.Alignment = 0;
+
+        D3D12_RESOURCE_ALLOCATION_INFO info =
+            m_device->GetResourceAllocationInfo(0, 1, &cbDesc);
+
         ThrowIfFailed(m_device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
             D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
+            &cbDesc,
             D3D12_RESOURCE_STATE_GENERIC_READ,
             nullptr,
             IID_PPV_ARGS(&m_constantBuffer)));
+
+        m_constantBuffer->GetDesc();
 
         // Describe and create a constant buffer view.
         D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};

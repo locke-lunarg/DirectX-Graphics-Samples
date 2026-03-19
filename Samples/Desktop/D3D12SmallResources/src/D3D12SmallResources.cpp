@@ -180,6 +180,14 @@ void D3D12SmallResources::LoadAssets()
             featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
         }
 
+        D3D12_FEATURE_DATA_TIGHT_ALIGNMENT tightData = {};
+        bool supportTightAlignment =
+            SUCCEEDED(m_device->CheckFeatureSupport(
+                D3D12_FEATURE_D3D12_TIGHT_ALIGNMENT,
+                &tightData, sizeof(tightData)))
+            && tightData.SupportTier >= D3D12_TIGHT_ALIGNMENT_TIER_1;
+        ThrowIfFailed(supportTightAlignment);
+
         CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
         CD3DX12_ROOT_PARAMETER1 rootParameters[1];
 
@@ -285,10 +293,14 @@ void D3D12SmallResources::LoadAssets()
 
         if (m_bIsEnhancedBarriersEnabled)
         {
+            auto desc = CD3DX12_RESOURCE_DESC1::Buffer(vertexBufferSize);
+            desc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+            desc.Alignment = 0;
+
             ThrowIfFailed(m_device->CreateCommittedResource3(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
                 D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC1::Buffer(vertexBufferSize),
+                &desc,
                 D3D12_BARRIER_LAYOUT_UNDEFINED,
                 nullptr,
                 nullptr,
@@ -299,7 +311,7 @@ void D3D12SmallResources::LoadAssets()
             ThrowIfFailed(m_device->CreateCommittedResource3(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC1::Buffer(vertexBufferSize),
+                &desc,
                 D3D12_BARRIER_LAYOUT_UNDEFINED,
                 nullptr,
                 nullptr,
@@ -309,10 +321,14 @@ void D3D12SmallResources::LoadAssets()
         }
         else
         {
+            auto desc = CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize);
+            desc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+            desc.Alignment = 0;
+
             ThrowIfFailed(m_device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
                 D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+                &desc,
                 D3D12_RESOURCE_STATE_COPY_DEST,
                 nullptr,
                 IID_PPV_ARGS(&m_vertexBuffer)));
@@ -320,7 +336,7 @@ void D3D12SmallResources::LoadAssets()
             ThrowIfFailed(m_device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+                &desc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 nullptr,
                 IID_PPV_ARGS(&vertexBufferUpload)));
@@ -400,6 +416,9 @@ void D3D12SmallResources::CreateTextures()
 
     CD3DX12_RESOURCE_DESC textureDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, TextureWidth, TextureHeight, 1, 1);
 
+    textureDesc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+    textureDesc.Alignment = 0;
+
     if (m_usePlacedResources)
     {
         // Since we are using small resources we can take advantage of 4KB
@@ -409,16 +428,17 @@ void D3D12SmallResources::CreateTextures()
         // When dealing with MSAA textures the rules are similar, but the minimum
         // alignment is 64KB for a texture whose most detailed mip can fit in an
         // allocation less than 4MB.
-        textureDesc.Alignment = D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
+        // textureDesc.Alignment = D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
+
         D3D12_RESOURCE_ALLOCATION_INFO info = m_device->GetResourceAllocationInfo(0, 1, &textureDesc);
 
-        if (info.Alignment != D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT)
-        {
+        //if (info.Alignment != D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT)
+        //{
             // If the alignment requested is not granted, then let D3D tell us
             // the alignment that needs to be used for these resources.
-            textureDesc.Alignment = 0;
-            info = m_device->GetResourceAllocationInfo(0, 1, &textureDesc);
-        }
+        //    textureDesc.Alignment = 0;
+        //    info = m_device->GetResourceAllocationInfo(0, 1, &textureDesc);
+        //}
 
         const UINT64 heapSize = TextureCount * info.SizeInBytes;
         CD3DX12_HEAP_DESC heapDesc(heapSize, D3D12_HEAP_TYPE_DEFAULT, 0, D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES);
@@ -428,9 +448,12 @@ void D3D12SmallResources::CreateTextures()
         {
             for (UINT n = 0; n < TextureCount; n++)
             {
+                UINT64 alignedOffset =
+                    (n * info.SizeInBytes + info.Alignment - 1) & ~(info.Alignment - 1);
+
                 ThrowIfFailed(m_device->CreatePlacedResource2(
                     m_textureHeap.Get(),
-                    n * info.SizeInBytes,
+                    alignedOffset,
                     &CD3DX12_RESOURCE_DESC1(textureDesc),
                     D3D12_BARRIER_LAYOUT_COMMON,
                     nullptr,
@@ -443,9 +466,12 @@ void D3D12SmallResources::CreateTextures()
         {
             for (UINT n = 0; n < TextureCount; n++)
             {
+                UINT64 alignedOffset =
+                    (n * info.SizeInBytes + info.Alignment - 1) & ~(info.Alignment - 1);
+
                 ThrowIfFailed(m_device->CreatePlacedResource(
                     m_textureHeap.Get(),
-                    n * info.SizeInBytes,
+                    alignedOffset,
                     &textureDesc,
                     D3D12_RESOURCE_STATE_COMMON,
                     nullptr,
@@ -504,10 +530,14 @@ void D3D12SmallResources::CreateTextures()
 
         if (m_bIsEnhancedBarriersEnabled)
         {
+            auto desc = CD3DX12_RESOURCE_DESC1::Buffer(uploadBufferSize);
+            desc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+            desc.Alignment = 0;
+
             ThrowIfFailed(m_device->CreateCommittedResource3(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC1::Buffer(uploadBufferSize),
+                &desc,
                 D3D12_BARRIER_LAYOUT_UNDEFINED,
                 nullptr,
                 nullptr,
@@ -517,10 +547,14 @@ void D3D12SmallResources::CreateTextures()
         }
         else
         {
+            auto desc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
+            desc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+            desc.Alignment = 0;
+
             ThrowIfFailed(m_device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+                &desc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 nullptr,
                 IID_PPV_ARGS(&uploadResources[n])));

@@ -181,6 +181,15 @@ void D3D12Bundles::LoadAssets()
             featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
         }
 
+        D3D12_FEATURE_DATA_TIGHT_ALIGNMENT tightAlignmentData = {};
+        bool supportTightAlignment = SUCCEEDED(
+            m_device->CheckFeatureSupport(
+                D3D12_FEATURE_D3D12_TIGHT_ALIGNMENT,
+                &tightAlignmentData,
+                sizeof(tightAlignmentData)))
+            && tightAlignmentData.SupportTier >= D3D12_TIGHT_ALIGNMENT_TIER_1;
+        ThrowIfFailed(supportTightAlignment);
+
         CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
         ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
@@ -270,10 +279,14 @@ void D3D12Bundles::LoadAssets()
 
     // Create the vertex buffer.
     {
+        D3D12_RESOURCE_DESC vertexDesc = CD3DX12_RESOURCE_DESC::Buffer(SampleAssets::VertexDataSize);
+        vertexDesc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+        vertexDesc.Alignment = 0;
+
         ThrowIfFailed(m_device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(SampleAssets::VertexDataSize),
+            &vertexDesc,
             D3D12_RESOURCE_STATE_COPY_DEST,
             nullptr,
             IID_PPV_ARGS(&m_vertexBuffer)));
@@ -306,10 +319,14 @@ void D3D12Bundles::LoadAssets()
 
     // Create the index buffer.
     {
+        D3D12_RESOURCE_DESC indexDesc = CD3DX12_RESOURCE_DESC::Buffer(SampleAssets::IndexDataSize);
+        indexDesc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+        indexDesc.Alignment = 0;
+
         ThrowIfFailed(m_device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(SampleAssets::IndexDataSize),
+            &indexDesc,
             D3D12_RESOURCE_STATE_COPY_DEST,
             nullptr,
             IID_PPV_ARGS(&m_indexBuffer)));

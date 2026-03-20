@@ -328,7 +328,7 @@ void D3D12Bundles::LoadAssets()
     {
         ThrowIfFailed(m_device->CreatePlacedResource1(
             m_bufferHeap.Get(),
-            infos[0].Offset,
+            infos[1].Offset,
             &indexDesc,
             D3D12_RESOURCE_STATE_COPY_DEST,
             nullptr,

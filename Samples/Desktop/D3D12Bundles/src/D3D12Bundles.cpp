@@ -277,15 +277,22 @@ void D3D12Bundles::LoadAssets()
     UINT meshDataLength;
     ThrowIfFailed(ReadDataFromFile(GetAssetFullPath(SampleAssets::DataFileName).c_str(), &pMeshData, &meshDataLength));
 
+    auto vertexDesc = CD3DX12_RESOURCE_DESC1::Buffer(SampleAssets::VertexDataSize, D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT);
+    auto indexDesc  = CD3DX12_RESOURCE_DESC1::Buffer(SampleAssets::IndexDataSize, D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT);
+
+    D3D12_RESOURCE_DESC1 descs[2] = { vertexDesc, indexDesc };
+    D3D12_RESOURCE_ALLOCATION_INFO1 infos[2] = {};
+    D3D12_RESOURCE_ALLOCATION_INFO aggregateInfo =
+        m_device->GetResourceAllocationInfo2(0, 2, descs, infos);
+
+    CD3DX12_HEAP_DESC heapDesc = CD3DX12_HEAP_DESC(aggregateInfo.SizeInBytes, D3D12_HEAP_TYPE_DEFAULT);
+    ThrowIfFailed(m_device->CreateHeap(&heapDesc, IID_PPV_ARGS(&m_bufferHeap)));
+
     // Create the vertex buffer.
     {
-        D3D12_RESOURCE_DESC vertexDesc = CD3DX12_RESOURCE_DESC::Buffer(SampleAssets::VertexDataSize);
-        vertexDesc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
-        vertexDesc.Alignment = 0;
-
-        ThrowIfFailed(m_device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-            D3D12_HEAP_FLAG_NONE,
+        ThrowIfFailed(m_device->CreatePlacedResource1(
+            m_bufferHeap.Get(),
+            infos[0].Offset,
             &vertexDesc,
             D3D12_RESOURCE_STATE_COPY_DEST,
             nullptr,
@@ -319,13 +326,9 @@ void D3D12Bundles::LoadAssets()
 
     // Create the index buffer.
     {
-        D3D12_RESOURCE_DESC indexDesc = CD3DX12_RESOURCE_DESC::Buffer(SampleAssets::IndexDataSize);
-        indexDesc.Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
-        indexDesc.Alignment = 0;
-
-        ThrowIfFailed(m_device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-            D3D12_HEAP_FLAG_NONE,
+        ThrowIfFailed(m_device->CreatePlacedResource1(
+            m_bufferHeap.Get(),
+            infos[0].Offset,
             &indexDesc,
             D3D12_RESOURCE_STATE_COPY_DEST,
             nullptr,
